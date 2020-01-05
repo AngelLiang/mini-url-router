@@ -82,17 +82,15 @@ class Map(object):
 
     def add(self, rulefactory):
         """
-        Add a new rule or factory to the map and bind it.  Requires that the
-        rule is not bound to another map.
-
-
-        添加一个新rule或一个map工厂，并绑定它。需要这个rule没有绑定其他map。
+        添加一个新rule或一个map工厂，并绑定它，而且这个rule没有绑定其他map。
         """
         for rule in rulefactory.get_rules(self):
             rule.bind(self)
-            self._rules.append(rule)  # 加入 self._rules
+            # 加入 self._rules
+            self._rules.append(rule)
+            # 加入 self._rules_by_endpoint
             self._rules_by_endpoint.setdefault(rule.endpoint, []).append(rule)
-        self._remap = True
+        self._remap = True  # 需要排序标志位
 
     def bind(self, server_name, script_name=None, subdomain=None,
              url_scheme='http', default_method='GET'):
@@ -154,10 +152,6 @@ class Map(object):
         in the correct order after things changed.
         """
         if self._remap:
-            # 给 self._rules 排序
-            # self._rules.sort(key=lambda x: x.match_compare_key())
-            # for rules in self._rules_by_endpoint.items():
-            #     rules.sort(key=lambda x: x.build_compare_key())
             self._remap = False
 
 

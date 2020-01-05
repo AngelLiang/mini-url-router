@@ -266,38 +266,6 @@ class Rule(AbstractRule):
 
         return True
 
-    def match_compare(self, other):
-        """Compare this object with another one for matching"""
-        if not other.arguments and self.arguments:
-            return 1
-        elif other.arguments and not self.arguments:
-            return -1
-        elif self.greediness > other.greediness:
-            return -1
-        elif self.greediness < other.greediness:
-            return 1
-        elif len(self.arguments) > len(other.arguments):
-            return 1
-        elif len(self.arguments) < len(other.arguments):
-            return -1
-        return 1
-
-    def build_compare(self, other):
-        """Compare this object with another one for building."""
-        if not other.arguments and self.arguments:
-            return -1
-        elif other.arguments and not self.arguments:
-            return 1
-        elif self.greediness > other.greediness:
-            return -1
-        elif self.greediness < other.greediness:
-            return 1
-        elif len(self.arguments) > len(other.arguments):
-            return -1
-        elif len(self.arguments) < len(other.arguments):
-            return 1
-        return -1
-
     def __eq__(self, other):
         return self.__class__ is other.__class__ and \
             self._trace == other._trace
