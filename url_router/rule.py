@@ -73,27 +73,26 @@ def get_converter(map, name, args):
     return map.converters[name](map, *args, **kwargs)
 
 
-class AbstractRule(object):
+class RuleFactory(object):
 
     def get_rules(self, map):
         raise NotImplementedError()
 
 
-class Rule(AbstractRule):
+class Rule(RuleFactory):
     """
     Represents one url pattern.
     """
 
-    def __init__(self, string, defaults=None, subdomain=None, methods=None,
+    def __init__(self, string, subdomain=None, methods=None,
                  build_only=False, endpoint=None, strict_slashes=None):
         """
         :param string: str, URL
-        :param defaults: str
         :param subdomain: str
-        :param methods: str
-        :param build_only: str
+        :param methods: list
+        :param build_only: bool
         :param endpoint: str
-        :param strict_slashes: 严格的斜杠
+        :param strict_slashes: bool, 严格的斜杠
         """
         if not string.startswith('/'):
             raise ValueError('urls must start with a leading slash')
@@ -101,30 +100,32 @@ class Rule(AbstractRule):
         self.is_leaf = not string.endswith('/')
 
         self.map = None
-        self.strict_slashes = strict_slashes
         self.subdomain = subdomain
-        self.defaults = defaults
         self.build_only = build_only
+        self.strict_slashes = strict_slashes
         if methods is None:
             self.methods = None
         else:
             self.methods = m = []
             for method in methods:
                 m.append(method.upper())
-            self.methods.sort(lambda a, b: cmp(len(b), len(a)))
+            # self.methods.sort(lambda a, b: cmp(len(b), len(a)))
         self.endpoint = endpoint
         self.greediness = 0
 
-        self._trace = []
+        # 转换器参数
         self.arguments = set()
+        self._trace = []
+        # 转换器
         self._converters = {}
+        # 该规则的正则表达式
         self._regex = None
 
     def get_rules(self, map):
         yield self
 
     def bind(self, map):
-        """
+        """ bind map
         Bind the url to a map and create a regular expression based on
         the information from the rule itself and the defaults from the map.
 
@@ -144,12 +145,13 @@ class Rule(AbstractRule):
         if self.subdomain is None:
             self.subdomain = map.default_subdomain
 
+        # 规则
         rule = self.subdomain + '|' + (
             self.is_leaf and self.rule or self.rule.rstrip('/')
         )
 
         regex_parts = []
-        # parse_rule: 解析规则
+        # 循环解析规则
         for converter, arguments, variable in parse_rule(rule):
             if converter is None:
                 # 静态部分
@@ -167,6 +169,7 @@ class Rule(AbstractRule):
         if not self.is_leaf:
             self._trace.append((False, '/'))
 
+        # method
         if self.methods is None:
             method_re = '[^>]*'
         else:
@@ -179,46 +182,50 @@ class Rule(AbstractRule):
                 '(?<!/)(?P<__suffix__>/?)' or '',
                 method_re
             )
+            # re编译并赋值给 self._regex
             self._regex = re.compile(regex, re.UNICODE)
 
     def match(self, path):
-        """
-        rule.match
+        """ rule.match
 
         检查规则是否匹配给定的路径。路径是一个在 "subdomain|/path(method)" 的字符串，
         并且由 map 组装。
 
-        如果rule使用转换器匹配了一个字典，一个值将被返回。否则返回None。
+        如果rule使用转换器匹配了一个字典，将会返回一个值。否则返回None。
         """
-        if not self.build_only:
-            # re.search: 扫描整个字符串并返回第一个成功的匹配。
-            m = self._regex.search(path)
-            if m is not None:
-                groups = m.groupdict()
-                # we have a folder like part of the url without a trailing
-                # slash and strict slashes enabled. raise an exception that
-                # tells the map to redirect to the same url but with a
-                # trailing slash
-                if self.strict_slashes and not self.is_leaf and \
-                   not groups.pop('__suffix__'):
-                    raise RequestSlash()
-                # if we are not in strict slashes mode we have to remove
-                # a __suffix__
-                elif not self.strict_slashes:
-                    del groups['__suffix__']
+        if self.build_only:
+            return None
 
-                result = {}
-                # 循环处理URL中的动态参数
-                for name, value in groups.items():
-                    try:
-                        value = self._converters[name].to_python(value)
-                    except ValidationError:
-                        return
-                    result[str(name)] = value
-                return result
+        # re.search: 扫描整个字符串并返回第一个成功的匹配。
+        m = self._regex.search(path)
+        if m is None:
+            return None
+
+        groups = m.groupdict()
+        # we have a folder like part of the url without a trailing
+        # slash and strict slashes enabled. raise an exception that
+        # tells the map to redirect to the same url but with a
+        # trailing slash
+        if self.strict_slashes and not self.is_leaf and \
+                not groups.pop('__suffix__'):
+            raise RequestSlash()
+        # if we are not in strict slashes mode we have to remove
+        # a __suffix__
+        elif not self.strict_slashes:
+            del groups['__suffix__']
+
+        result = {}
+        # 循环处理URL中的动态参数
+        for name, value in groups.items():
+            try:
+                value = self._converters[name].to_python(value)
+            except ValidationError:
+                return
+            result[str(name)] = value
+        return result
 
     def build(self, values):
-        """
+        """ rule.build
         Assembles the relative url for that rule and the subdomain.
         If building doesn't work for some reasons `None` is returned.
         """

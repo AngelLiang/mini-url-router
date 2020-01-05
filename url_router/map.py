@@ -94,7 +94,7 @@ class Map(object):
 
     def bind(self, server_name, script_name=None, subdomain=None,
              url_scheme='http', default_method='GET'):
-        """
+        """ bind server_name
         Return a new map adapter for this request.
 
         :param server_name: str
