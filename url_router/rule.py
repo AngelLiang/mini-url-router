@@ -19,7 +19,7 @@ _rule_re = re.compile(r'''
 
 def parse_rule(rule):
     """
-    解析规则，判断 URL 是静态路由还是动态路由。
+    解析规则生成器，判断一个 URL 是静态路由还是动态路由。
     解析规则并返回生成器。每一个返回迭代都是一个元组， `(converter, arguments, variable)`
     如果 converter 为 None， 则它是一个静态 URL 部分，否则是动态的。
     """
@@ -59,7 +59,7 @@ def get_converter(map, name, args):
 
 
     获取转换器
-    创建一个新的转换器，对给定参数或抛出的异常，如果转换器不存在的话。
+    如果转换器不存在的话，则对给定参数创建一个新的转换器，或抛出的异常。
     """
     if not name in map.converters:
         raise LookupError('the converter %r does not exist' % name)
@@ -130,7 +130,7 @@ class Rule(RuleFactory):
         the information from the rule itself and the defaults from the map.
 
 
-        把url绑定到map，并创建一个正则表达式，基于来自rule自己和来自map的defaults的信息
+        把 url 绑定到一个 map ，并创建一个正则表达式，基于来自 rule 自己和 map 的 defaults 的信息
         """
         if self.map is not None:
             raise RuntimeError('url rule %r already bound to map %r' %
@@ -164,7 +164,7 @@ class Rule(RuleFactory):
                 self._converters[variable] = convobj
                 self._trace.append((True, variable))
                 self.arguments.add(str(variable))  # 添加参数
-                if convobj.is_greedy:
+                if convobj.is_greedy:  # 贪婪的
                     self.greediness += 1
         if not self.is_leaf:
             self._trace.append((False, '/'))
