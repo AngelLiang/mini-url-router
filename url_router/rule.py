@@ -101,7 +101,7 @@ class Rule(RuleFactory):
 
         self.map = None
         self.subdomain = subdomain
-        self.build_only = build_only
+        self.is_build_only = build_only
         self.strict_slashes = strict_slashes
         if methods is None:
             self.methods = None
@@ -115,7 +115,7 @@ class Rule(RuleFactory):
 
         # 转换器参数
         self.arguments = set()
-        self._trace = []
+        self._trace = []  # [(bool, variable)]
         # 转换器
         self._converters = {}
         # 该规则的正则表达式
@@ -151,7 +151,7 @@ class Rule(RuleFactory):
         )
 
         regex_parts = []
-        # 循环解析规则
+        # 循环解析规则，解析部分正则式放进 regex_parts
         for converter, arguments, variable in parse_rule(rule):
             if converter is None:
                 # 静态部分
@@ -175,13 +175,15 @@ class Rule(RuleFactory):
         else:
             method_re = '|'.join([re.escape(x) for x in self.methods])
 
-        if not self.build_only:
+        if not self.is_build_only:
+            # 拼接正则式
             regex = r'^%s%s\(%s\)$' % (
                 u''.join(regex_parts),
                 (not self.is_leaf or not self.strict_slashes) and
                 '(?<!/)(?P<__suffix__>/?)' or '',
                 method_re
             )
+            # print(regex)
             # re编译并赋值给 self._regex
             self._regex = re.compile(regex, re.UNICODE)
 
@@ -193,7 +195,7 @@ class Rule(RuleFactory):
 
         如果rule使用转换器匹配了一个字典，将会返回一个值。否则返回None。
         """
-        if self.build_only:
+        if self.is_build_only:
             return None
 
         # re.search: 扫描整个字符串并返回第一个成功的匹配。
@@ -209,8 +211,8 @@ class Rule(RuleFactory):
         if self.strict_slashes and not self.is_leaf and \
                 not groups.pop('__suffix__'):
             raise RequestSlash()
-        # if we are not in strict slashes mode we have to remove
-        # a __suffix__
+        # if we are not in strict slashes mode we have to remove a __suffix__
+        # 非严格斜杠模式下我们需要移除 __suffix__
         elif not self.strict_slashes:
             del groups['__suffix__']
 
@@ -253,7 +255,7 @@ class Rule(RuleFactory):
 
     def provides_defaults_for(self, rule):
         """Check if this rule has defaults for a given rule."""
-        return not self.build_only and \
+        return not self.is_build_only and \
             self.endpoint == rule.endpoint and self != rule and \
             self.arguments == rule.arguments
 
