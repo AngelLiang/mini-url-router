@@ -156,7 +156,11 @@ class Map(object):
 
 
 class MapAdapter(object):
-    """Map适配器"""
+    """Map适配器
+
+
+    主要添加 :meth:`build` 、 :meth:`match` 和 :meth:`dispatch` 这三个方法
+    """
 
     def __init__(self, map, server_name, script_name, subdomain,
                  url_scheme, default_method):
@@ -170,7 +174,8 @@ class MapAdapter(object):
         self.default_method = default_method
 
     def dispatch(self, view_func, path_info, method=None):
-        """
+        """ 调度视图函数
+
         :param view_func: callable(endpoint, args)
         :param path_info: str
         :param method: str
@@ -182,7 +187,8 @@ class MapAdapter(object):
         return view_func(endpoint, args)
 
     def match(self, path_info, method=None):
-        """
+        """ 匹配URL
+
         :param path_info: str
         :param method: str
         """
@@ -205,7 +211,8 @@ class MapAdapter(object):
         raise NotFound()  # 抛出 NotFound 异常
 
     def build(self, endpoint, values=None, method=None, force_external=False):
-        """
+        """ 构建URL
+
         :param endpoint: str, 端点
         :param values: dict
         :param method: str
