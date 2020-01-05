@@ -154,12 +154,10 @@ class Map(object):
         in the correct order after things changed.
         """
         if self._remap:
-            # self._rules = sorted(self._rules, key=lambda a,
-            #                      b: a.match_compare(b))
-            for k, v in self._rules_by_endpoint.items():
-                pass
-                # self._rules = sorted(self._rules, key=lambda a,
-                #                      b: a.build_compare(b))
+            # 给 self._rules 排序
+            # self._rules.sort(key=lambda x: x.match_compare_key())
+            # for rules in self._rules_by_endpoint.items():
+            #     rules.sort(key=lambda x: x.build_compare_key())
             self._remap = False
 
 
