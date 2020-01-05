@@ -114,6 +114,40 @@ class Map(object):
         return MapAdapter(self, server_name, script_name, subdomain,
                           url_scheme, default_method)
 
+    def bind_to_environ(self, environ, server_name=None, subdomain=None,
+                        calculate_subdomain=False):
+        """
+        Like `bind` but the required information are pulled from the
+        WSGI environment provided where possible. For some information
+        this won't work (subdomains), if you want that feature you have
+        to provide the subdomain with the `subdomain` variable.
+
+        If `subdomain` is `None` but an environment and a server name is
+        provided it will calculate the current subdomain automatically.
+        Example: `server_name` is ``'example.com'`` and the `SERVER_NAME`
+        in the wsgi `environ` is ``'staging.dev.example.com'`` the calculated
+        subdomain will be ``'staging.dev'``.
+        """
+        if server_name is None:
+            if 'HTTP_HOST' in environ:
+                server_name = environ['HTTP_HOST']
+            else:
+                server_name = environ['SERVER_NAME']
+                if (environ['wsgi.url_scheme'], environ['SERVER_PORT']) not \
+                   in (('https', '443'), ('http', '80')):
+                    server_name += ':' + environ['SERVER_PORT']
+        elif subdomain is None:
+            cur_server_name = environ['SERVER_NAME'].split('.')
+            real_server_name = server_name.split(':', 1)[0].split('.')
+            offset = -len(real_server_name)
+            if cur_server_name[offset:] != real_server_name:
+                raise ValueError('the server name provided (%r) does not match the '
+                                 'server name from the WSGI environment (%r)' %
+                                 (environ['SERVER_NAME'], server_name))
+            subdomain = '.'.join(filter(None, cur_server_name[:offset]))
+        return Map.bind(self, server_name, environ.get('SCRIPT_NAME'), subdomain,
+                        environ['wsgi.url_scheme'], environ['REQUEST_METHOD'])
+
     def update(self):
         """
         Called before matching and building to keep the compiled rules
