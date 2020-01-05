@@ -2,6 +2,14 @@
 
 模仿 Werkzeug 中的 routing 路由代码
 
+## 目录结构
+
+- `converters`: 类型转换器
+- `exceptions`: 异常类
+- `map`: Map类和MapAdapter类
+- `rule`: Rule类
+- `utils`: 辅助代码
+
 ## 测试代码
 
 
