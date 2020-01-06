@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 from .converters import (
     UnicodeConverter, IntegerConverter, PathConverter, FloatConverter
 )
-from .exceptions import RequestRedirect, NotFound, BuildError
+from .exceptions import RequestRedirect, NotFound, BuildError, RequestSlash
 
 
 DEFAULT_CONVERTERS = {
@@ -203,7 +203,17 @@ class MapAdapter(object):
 
         # 每次 match 都要遍历 map._rules
         for rule in self.map._rules:
-            rv = rule.match(path)
+            try:
+                rv = rule.match(path)
+            except RequestSlash:
+                # 请求重定向异常
+                raise RequestRedirect(str('%s://%s%s%s/%s/' % (
+                    self.url_scheme,  # url scheme
+                    self.subdomain and self.subdomain + '.' or '',  # 子域名
+                    self.server_name,  # 域名
+                    self.script_name[:-1],  # 路径
+                    path_info.lstrip('/')
+                )))
             # 返回值没有参数，继续循环
             if rv is None:
                 continue

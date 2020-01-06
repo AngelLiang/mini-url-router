@@ -71,6 +71,17 @@ url_router.exceptions.NotFound
 Traceback (most recent call last):
     ...
 url_router.exceptions.NotFound
+
+
+测试斜杠
+>>> adapter.match('/foo/')
+Traceback (most recent call last):
+    ...
+url_router.exceptions.NotFound
+>>> adapter.match('/bar')
+Traceback (most recent call last):
+    ...
+url_router.exceptions.RequestRedirect: http://example.org/bar/
 """
 
 
